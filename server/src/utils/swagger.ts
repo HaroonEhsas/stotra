@@ -1,65 +1,34 @@
 import { Express, Request, Response } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import swaggerAutogen from "swagger-autogen";
 const version = "0.0.0";
-import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
-// const options = {
-// 	definition: {
-// 		openapi: "3.0.0",
-// 		info: {
-// 			title: "Stock Trading Simulator API",
-// 			version: version,
-// 			description: "A REST API for the Stock Trading Simulator",
-// 		},
-// components: {
-// 	securitySchemes: {
-// 		bearerAuth: {
-// 			type: "http",
-// 			scheme: "bearer",
-// 			bearerFormat: "JWT",
-// 		},
-// 	},
-// },
-// security: [
-// 	{
-// 		bearerAuth: [],
-// 	},
-// ],
-// 	},
-// };
-
-const outputFile = path.join(__dirname, "../swagger-output.json");
-const endpointsFiles = [path.join(__dirname, "../routes.ts")];
-
 function swaggerDocs(app: Express, port: number) {
-	const doc = {
-		info: {
-			title: "Stock Trading Simulator API",
-			description: "A REST API for the Stock Trading Simulator",
-			version,
-		},
-		host: "0.0.0.0:" + port,
-		securityDefinitions: {
-			bearerAuth: {
-				type: "http",
-				scheme: "bearer",
-				bearerFormat: "JWT",
+	try {
+		const options = {
+			definition: {
+				openapi: "3.0.0",
+				info: {
+					title: "Stock Trading Simulator API",
+					version,
+					description: "A REST API for the Stock Trading Simulator",
+				},
+				components: {
+					securitySchemes: {
+						bearerAuth: {
+							type: "http",
+							scheme: "bearer",
+							bearerFormat: "JWT",
+						},
+					},
+				},
+				security: [{ bearerAuth: [] }],
 			},
-		},
-		servers: [
-			{ url: process.env.STOTRA_SERVER_URL || `http://0.0.0.0:${port}` },
-		],
-	};
-
-	const autogen = swaggerAutogen({
-		openapi: "3.0.0",
-		servers: [{ url: "/x" }],
-	})(outputFile, endpointsFiles, doc).then(() => {
-		const swaggerDocument = require(outputFile);
+			apis: ["./dist/routes.js"],
+		};
+		const swaggerDocument = swaggerJsdoc(options);
 		app.use(
 			"/api/docs",
 			swaggerUi.serve,
@@ -68,7 +37,9 @@ function swaggerDocs(app: Express, port: number) {
 			}),
 		);
 		console.log(`Swagger docs available at http://0.0.0.0:${port}/api/docs`);
-	});
+	} catch (e) {
+		console.warn("Swagger setup skipped:", (e as Error).message);
+	}
 }
 
 exports.swaggerDocs = swaggerDocs;

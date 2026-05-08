@@ -7,7 +7,7 @@ let uri: string;
 
 if (process.env.STOTRA_MONGODB_CLUSTER) {
 	// Atlas connection
-	const password = process.env.STOTRA_MONGODB_PASSWORD;
+	const password = encodeURIComponent(process.env.STOTRA_MONGODB_PASSWORD || "");
 	uri =
 		"mongodb+srv://" +
 		process.env.STOTRA_MONGODB_USERNAME +
@@ -15,7 +15,7 @@ if (process.env.STOTRA_MONGODB_CLUSTER) {
 		password +
 		"@" +
 		process.env.STOTRA_MONGODB_CLUSTER +
-		"/users?authMechanism=DEFAULT&retryWrites=true&w=majority";
+		".mongodb.net/users?retryWrites=true&w=majority";
 } else {
 	// Local MongoDB connection
 	const host = process.env.STOTRA_MONGODB_HOST || "localhost";
@@ -24,11 +24,15 @@ if (process.env.STOTRA_MONGODB_CLUSTER) {
 	uri = `mongodb://${host}:${port}/${db}`;
 }
 
-mongoose.connect(uri);
+mongoose.connect(uri).catch((err) => {
+	console.error("MongoDB connection failed:", err.message);
+});
 
 const db = mongoose.connection;
 
-db.on("error", console.error.bind(console, "connection error:"));
+db.on("error", (err) => {
+	console.error("MongoDB connection error:", err.message);
+});
 
 db.once("open", () => {
 	console.log("Connected to Database");
