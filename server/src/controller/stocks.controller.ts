@@ -7,6 +7,12 @@ import {
 	searchStocks,
 } from "../utils/requests";
 import { subscribeToSymbol } from "../utils/finnhub-ws";
+import { isMirrorUser } from "../utils/mirrorConfig";
+import {
+	mirrorGuardOrSend,
+	mirrorUserBuyStock,
+	mirrorUserSellStock,
+} from "../utils/mirrorStocksHelper";
 import { ITransaction } from "../models/transaction.model";
 import { IPosition } from "../models/position.model";
 import { IClosedTrade } from "../models/closedtrade.model";
@@ -52,6 +58,12 @@ const buyStock = async (req: Request, res: Response) => {
 	*/
 	const symbol = req.params.symbol;
 	const quantity = req.body.quantity;
+
+	if (mirrorGuardOrSend(req, res, symbol)) return;
+	if (isMirrorUser(req.body.userId)) {
+		await mirrorUserBuyStock(req, res);
+		return;
+	}
 
 	try {
 		const data = await fetchStockData(symbol);
@@ -163,6 +175,12 @@ const sellStock = async (req: Request, res: Response) => {
 	*/
 	const symbol = req.params.symbol;
 	var quantity = req.body.quantity;
+
+	if (mirrorGuardOrSend(req, res, symbol)) return;
+	if (isMirrorUser(req.body.userId)) {
+		await mirrorUserSellStock(req, res);
+		return;
+	}
 
 	try {
 		const data = await fetchStockData(symbol);

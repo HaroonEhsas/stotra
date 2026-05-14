@@ -192,6 +192,17 @@ function StockView() {
 									Today
 								</Heading>
 							</HStack>
+							{typeof stock.bid === "number" &&
+								typeof stock.offer === "number" &&
+								Number.isFinite(stock.bid) &&
+								Number.isFinite(stock.offer) &&
+								stock.bid > 0 &&
+								stock.offer > 0 && (
+									<Text fontSize="sm" color="gray.600" mt={1}>
+										Bid {formatter.format(stock.bid)} · Ask{" "}
+										{formatter.format(stock.offer)}
+									</Text>
+								)}
 						</Stat>
 						{tokens.isAuthenticated() &&
 							(onWatchlist ? (

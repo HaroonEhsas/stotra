@@ -5,6 +5,8 @@ export interface IPosition extends Document {
 	purchasePrice: number;
 	purchaseDate: number;
 	quantity: number;
+	/** IG deal id for mirror-mode hedges (close on IG using this id). */
+	igDealId?: string;
 	_doc: any;
 }
 
@@ -28,6 +30,11 @@ export const PositionSchema = new Schema<IPosition>({
 		type: Number,
 		required: true,
 		// signed quantity: >0 long, <0 short
+	},
+	igDealId: {
+		type: String,
+		required: false,
+		trim: true,
 	},
 });
 

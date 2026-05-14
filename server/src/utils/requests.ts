@@ -3,6 +3,12 @@ import axios from "axios";
 export const stockCache = new Cache({ stdTTL: 60 }); // default 1 min (historical data); quotes use explicit short TTL
 
 import dotenv from "dotenv";
+import { mirrorNvdaEpic } from "./mirrorConfig";
+import {
+	fetchIgHistoricalCandles,
+	fetchIgQuoteForFrontend,
+	isIgNvdaConfigured,
+} from "./igClient";
 dotenv.config();
 
 const ALPHA_VANTAGE_API_KEY = process.env.STOTRA_ALPHAVANTAGE_API || "demo";
@@ -258,6 +264,21 @@ async function yahooHistorical(
 }
 
 export const fetchStockData = async (symbol: string): Promise<any> => {
+	const upper = symbol.toUpperCase();
+	if (upper === "NVDA" && isIgNvdaConfigured()) {
+		const igCacheKey = upper + "-quote-ig";
+		try {
+			if (stockCache.has(igCacheKey)) {
+				return stockCache.get(igCacheKey);
+			}
+			const igQuote = await fetchIgQuoteForFrontend(mirrorNvdaEpic());
+			stockCache.set(igCacheKey, igQuote, 5);
+			return igQuote;
+		} catch (e) {
+			console.warn("IG NVDA quote unavailable, falling back:", e);
+		}
+	}
+
 	const cacheKey = symbol + "-quote";
 
 	try {
@@ -496,6 +517,21 @@ export const fetchHistoricalStockData = async (
 	try {
 		if (stockCache.has(cacheKey)) {
 			return stockCache.get(cacheKey);
+		}
+
+		if (symbol.toUpperCase() === "NVDA" && isIgNvdaConfigured()) {
+			try {
+				const igPoints = await fetchIgHistoricalCandles(
+					mirrorNvdaEpic(),
+					period,
+				);
+				if (Array.isArray(igPoints) && igPoints.length > 0) {
+					stockCache.set(cacheKey, igPoints, 60);
+					return igPoints;
+				}
+			} catch (e) {
+				console.warn("IG NVDA historical unavailable, falling back:", e);
+			}
 		}
 
 		let formattedData: number[][] = [];
